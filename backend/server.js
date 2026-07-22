@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
@@ -27,22 +28,24 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Health check
 app.get("/", (req, res) => {
-  res.json({ success: true, message: "API is running" });
-});
-
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route not found: ${req.method} ${req.originalUrl}`
+  res.json({
+    success: true,
+    message: "API is running"
   });
 });
 
+// ============================
+// API Routes (MUST COME BEFORE 404)
+// ============================
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
 
-// Serve the frontend build from the backend when present
+
+// ============================
+// Serve React frontend build
+// ============================
+
 const frontendBuildPath = path.join(__dirname, '..', 'frontend', 'build');
 const indexHtmlPath = path.join(frontendBuildPath, 'index.html');
 
@@ -55,18 +58,30 @@ if (fs.existsSync(indexHtmlPath)) {
   app.use(express.static(frontendBuildPath));
 
   app.get('*', (req, res, next) => {
+    // Do not send React app for API routes
     if (req.path.startsWith('/api')) {
       return next();
     }
+
     res.sendFile(indexHtmlPath);
   });
 }
 
-// 404 + error handling (must be last)
+
+// ============================
+// Error handling (MUST BE LAST)
+// ============================
+
 app.use(notFound);
 app.use(errorHandler);
 
+
+// ============================
+// Start Server
+// ============================
+
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
   console.log(`[SERVER] DeskFlow API running on port ${PORT}`);
   console.log(`[SERVER] Swagger docs at http://localhost:${PORT}/api-docs`);

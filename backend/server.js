@@ -26,9 +26,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Health check
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ success: true, message: 'DeskFlow API is running' });
+app.get("/", (req, res) => {
+  res.json({ success: true, message: "API is running" });
 });
+
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`
+  });
+});
+
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -38,7 +46,12 @@ app.use('/api/tickets', ticketRoutes);
 const frontendBuildPath = path.join(__dirname, '..', 'frontend', 'build');
 const indexHtmlPath = path.join(frontendBuildPath, 'index.html');
 
+console.log("Frontend build path:", frontendBuildPath);
+console.log("Index HTML path:", indexHtmlPath);
+console.log("Index exists:", fs.existsSync(indexHtmlPath));
+
 if (fs.existsSync(indexHtmlPath)) {
+
   app.use(express.static(frontendBuildPath));
 
   app.get('*', (req, res, next) => {

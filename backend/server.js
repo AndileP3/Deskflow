@@ -1,5 +1,7 @@
 require('dotenv').config();
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 
@@ -31,6 +33,21 @@ app.get('/api/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
+
+// Serve the frontend build from the backend when present
+const frontendBuildPath = path.join(__dirname, '..', 'frontend', 'build');
+const indexHtmlPath = path.join(frontendBuildPath, 'index.html');
+
+if (fs.existsSync(indexHtmlPath)) {
+  app.use(express.static(frontendBuildPath));
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(indexHtmlPath);
+  });
+}
 
 // 404 + error handling (must be last)
 app.use(notFound);
